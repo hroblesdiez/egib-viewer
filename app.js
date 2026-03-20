@@ -11,6 +11,16 @@ async function runSearch() {
   parcelLayer.clearLayers();
   document.getElementById('btn-dl').disabled = true;
 
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'search', {
+      powiaty:      [...selectedPowiats].join(', '),
+      grupy:        [...selectedGrupy].join(', ')   || 'wszystkie',
+      klasy:        [...selectedKlasy].join(', ')   || 'wszystkie',
+      area_min:     document.getElementById('area-min').value || null,
+      area_max:     document.getElementById('area-max').value || null
+    });
+  }
+
   let allGeoJSON = null;
   const allFeatures    = [];
   const errors         = [];
@@ -133,6 +143,12 @@ function downloadGeoJSON() {
     crs: { type: 'name', properties: { name: 'urn:ogc:def:crs:EPSG::2180' } },
     features: filteredGeoJSON.features.map(f => ({ ...f, geometry: reprojectGeometry(f.geometry) }))
   };
+
+  if (typeof gtag !== 'undefined') {
+    gtag('event', 'download_geojson', {
+      feature_count: filteredGeoJSON.features.length
+    });
+  }
 
   const blob = new Blob([JSON.stringify(converted, null, 2)], { type: 'application/geo+json' });
   const url  = URL.createObjectURL(blob);
