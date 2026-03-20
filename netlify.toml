@@ -2,6 +2,10 @@
   publish = "."
   command = ""
 
+[[edge_functions]]
+  path     = "/wfs-proxy"
+  function = "wfs-proxy"
+
 [[redirects]]
   from   = "/*"
   to     = "/index.html"

@@ -9,11 +9,8 @@ async function fetchWFS(config) {
     SRSNAME:      'EPSG:4326'
   });
 
-  const wfsUrl = config.wfs_url + params.toString();
-
-  // allorigins.win is an open-source CORS proxy with no payload size limit.
-  // It wraps the response in JSON: { contents: "<raw response>", status: { http_code: 200 } }
-  const proxyUrl = 'https://api.allorigins.win/get?url=' + encodeURIComponent(wfsUrl);
+  const wfsUrl   = config.wfs_url + params.toString();
+  const proxyUrl = '/wfs-proxy?url=' + encodeURIComponent(wfsUrl);
 
   let resp;
   try {
@@ -24,19 +21,12 @@ async function fetchWFS(config) {
 
   if (!resp.ok) throw new Error('Proxy HTTP ' + resp.status);
 
-  let wrapper;
-  try {
-    wrapper = await resp.json();
-  } catch (e) {
-    throw new Error('Nieprawidlowa odpowiedz od serwera proxy');
+  const upstreamStatus = resp.headers.get('X-Upstream-Status');
+  if (upstreamStatus && upstreamStatus !== '200') {
+    throw new Error('Serwer WFS zwrocil HTTP ' + upstreamStatus);
   }
 
-  const httpCode = wrapper.status && wrapper.status.http_code;
-  if (httpCode && httpCode !== 200) {
-    throw new Error('Serwer WFS zwrocil HTTP ' + httpCode);
-  }
-
-  const text = wrapper.contents || '';
+  const text = await resp.text();
   if (!text) throw new Error('Serwer WFS zwrocil pusta odpowiedz');
 
   if (config.format.includes('json')) {
