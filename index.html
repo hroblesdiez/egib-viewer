@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Przegladarka Dzialek EGIB</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+</head>
+<body>
+
+<header>
+  <svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+  </svg>
+  <h1>Przegladarka Dzialek EGIB <span class="sub">Ewidencja Gruntow i Budynkow</span></h1>
+</header>
+
+<div class="main">
+
+  <div id="panel">
+    <div class="panel-scroll">
+
+      <div class="section">
+        <div class="section-label">Powiat</div>
+        <div class="multi-select-wrap">
+          <div class="search-input-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input id="search-powiat" type="text" placeholder="Szukaj powiatu..." autocomplete="off" />
+          </div>
+          <div class="options-list" id="list-powiat"></div>
+        </div>
+        <div class="tags-wrap" id="tags-powiat"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Grupa Rejestrowa</div>
+        <div class="multi-select-wrap">
+          <div class="search-input-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input id="search-grupa" type="text" placeholder="Szukaj grupy..." autocomplete="off" />
+          </div>
+          <div class="options-list" id="list-grupa"></div>
+        </div>
+        <div class="tags-wrap" id="tags-grupa"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Klasa Uzytku (KLASOUZYTKI)</div>
+        <div class="multi-select-wrap">
+          <div class="search-input-wrap">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input id="search-klasa" type="text" placeholder="Szukaj klasy..." autocomplete="off" />
+          </div>
+          <div class="options-list" id="list-klasa"></div>
+        </div>
+        <div class="tags-wrap" id="tags-klasa"></div>
+      </div>
+
+      <div class="section">
+        <div class="section-label">Powierzchnia (m&sup2;)</div>
+        <div style="display:flex;flex-direction:column;gap:7px;">
+          <div class="area-row">
+            <label>Wiekszy niz:</label>
+            <input type="number" id="area-min" placeholder="np. 500" min="0" />
+          </div>
+          <div class="area-row">
+            <label>Mniejszy niz:</label>
+            <input type="number" id="area-max" placeholder="np. 5000" min="0" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="actions">
+      <div id="result-info"></div>
+      <button class="btn btn-search" id="btn-search" onclick="runSearch()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        Wyszukaj dzialki
+      </button>
+      <button class="btn btn-dl" id="btn-dl" onclick="downloadGeoJSON()" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        Pobierz GeoJSON
+      </button>
+      <button class="btn btn-clear" onclick="clearAll()">Wyczysc filtry</button>
+    </div>
+
+    <div id="contact-bar">
+      Masz sugestie? <a href="mailto:humberto.robles.diez@gmail.com">Napisz do mnie</a>
+    </div>
+  </div>
+
+  <div id="map-wrap">
+    <div id="map"></div>
+
+    <div id="map-controls">
+      <div class="toggle-row">
+        <input type="checkbox" id="tog-parcels" checked onchange="toggleLayer('parcels', this.checked)" />
+        <label for="tog-parcels">Dzialki</label>
+      </div>
+      <div class="toggle-row">
+        <input type="checkbox" id="tog-satellite" onchange="toggleLayer('satellite', this.checked)" />
+        <label for="tog-satellite">Satelita (Google)</label>
+      </div>
+    </div>
+
+    <div id="map-msg">
+      <strong id="map-msg-title"></strong>
+      <p id="map-msg-body"></p>
+    </div>
+
+    <div id="spinner"><div class="spinner-ring"></div></div>
+  </div>
+
+</div>
+
+<script src="powiaty_data.js"></script>
+<script src="gml.js"></script>
+<script src="wfs.js"></script>
+<script src="map.js"></script>
+<script src="ui.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
